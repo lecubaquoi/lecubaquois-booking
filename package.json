@@ -1,6 +1,6 @@
 
 {
-  "name": "lecubaquois-booking-env",
+  "name": "lecubaquois-booking-debug",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
