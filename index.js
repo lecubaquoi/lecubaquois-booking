@@ -1,39 +1,41 @@
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const { google } = require('googleapis');
+const fs = require('fs');
 const app = express();
-const PORT = process.env.PORT || 3000;
-const sheetId = '1AZZ_SsEmgyf1Q3KybWDA0qqlDR5HQwclTzar9pWGkaY'; // Your Google Sheet ID
+const PORT = process.env.PORT || 10000;
 
 app.use(bodyParser.json());
 
-const auth = new google.auth.GoogleAuth({
-  keyFile: 'lecubaquois-booking-1a186c9be3af.json', // Path to your service account key
-  scopes: ['https://www.googleapis.com/auth/spreadsheets']
-});
-
 app.post('/book', async (req, res) => {
   try {
+    const { service, barber, date, time, name, phone } = req.body;
+
+    const auth = new google.auth.GoogleAuth({
+      keyFile: './lecubaquois-booking-1a186c9be3af.json',
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+
     const client = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: client });
 
-    const { service, barber, date, time, name, phone } = req.body;
+    const spreadsheetId = '1AZZ_SsEmgyf1Q3KybWDA0qqlDR5HQwclTzar9pWGkaY';
+    const range = 'Table1!A2:F';
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: sheetId,
-      range: 'Bookings!A1',
-      valueInputOption: 'RAW',
-      insertDataOption: 'INSERT_ROWS',
+      spreadsheetId,
+      range,
+      valueInputOption: 'USER_ENTERED',
       requestBody: {
-        values: [[service, barber, date, time, name, phone]]
-      }
+        values: [[service, barber, date, time, name, phone]],
+      },
     });
 
-    res.status(200).json({ message: 'Booking saved!' });
-  } catch (error) {
-    console.error('Error saving booking:', error);
-    res.status(500).json({ error: 'Something went wrong' });
+    console.log(`✅ Booking saved: ${name} - ${service}`);
+    res.json({ status: 'success' });
+  } catch (err) {
+    console.error('❌ Error saving booking:', err);
+    res.status(500).json({ error: 'Failed to save booking' });
   }
 });
 
