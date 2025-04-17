@@ -1,7 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { google } = require('googleapis');
-const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
@@ -9,10 +8,11 @@ app.use(bodyParser.json());
 
 app.post('/book', async (req, res) => {
   try {
-    const { service, barber, date, time, name, phone } = req.body;
+    // Decode the service account key from base64 env variable
+    const key = JSON.parse(Buffer.from(process.env.GOOGLE_SERVICE_KEY_B64, 'base64').toString('utf8'));
 
     const auth = new google.auth.GoogleAuth({
-      keyFile: './lecubaquois-booking-1a186c9be3af.json',
+      credentials: key,
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
@@ -21,6 +21,7 @@ app.post('/book', async (req, res) => {
 
     const spreadsheetId = '1AZZ_SsEmgyf1Q3KybWDA0qqlDR5HQwclTzar9pWGkaY';
     const range = 'Table1!A2:F';
+    const { service, barber, date, time, name, phone } = req.body;
 
     await sheets.spreadsheets.values.append({
       spreadsheetId,
@@ -28,7 +29,7 @@ app.post('/book', async (req, res) => {
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [[service, barber, date, time, name, phone]],
-      },
+      }
     });
 
     console.log(`✅ Booking saved: ${name} - ${service}`);
