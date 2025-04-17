@@ -8,8 +8,10 @@ app.use(bodyParser.json());
 
 app.post('/book', async (req, res) => {
   try {
-    // Decode the service account key from base64 env variable
-    const key = JSON.parse(Buffer.from(process.env.GOOGLE_SERVICE_KEY_B64, 'base64').toString('utf8'));
+    const keyBase64 = process.env.GOOGLE_SERVICE_KEY_B64;
+    if (!keyBase64) throw new Error("Missing GOOGLE_SERVICE_KEY_B64 environment variable");
+
+    const key = JSON.parse(Buffer.from(keyBase64, 'base64').toString('utf-8'));
 
     const auth = new google.auth.GoogleAuth({
       credentials: key,
@@ -23,6 +25,10 @@ app.post('/book', async (req, res) => {
     const range = 'Table1!A2:F';
     const { service, barber, date, time, name, phone } = req.body;
 
+    if (!(service && barber && date && time && name && phone)) {
+      throw new Error("Missing booking data fields.");
+    }
+
     await sheets.spreadsheets.values.append({
       spreadsheetId,
       range,
@@ -35,8 +41,8 @@ app.post('/book', async (req, res) => {
     console.log(`✅ Booking saved: ${name} - ${service}`);
     res.json({ status: 'success' });
   } catch (err) {
-    console.error('❌ Error saving booking:', err);
-    res.status(500).json({ error: 'Failed to save booking' });
+    console.error('❌ Error saving booking:', err.message);
+    res.status(500).json({ error: 'Failed to save booking', details: err.message });
   }
 });
 
